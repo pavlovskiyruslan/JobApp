@@ -20,7 +20,7 @@
         android:id="@+id/tvStatusTop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Disconnected"
+        android:text="Разъединен"
         android:textAlignment="viewEnd"
         android:textColor="@color/white" />
 
