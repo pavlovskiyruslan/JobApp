@@ -86,15 +86,19 @@
         app:layout_constraintHorizontal_bias="0.038"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.308" />
+        app:layout_constraintVertical_bias="0.351" />
+
 
     <TextView
         android:id="@+id/tvReceivedData"
-        android:layout_width="88dp"
-        android:layout_height="47dp"
-        android:layout_marginTop="496dp"
+        android:layout_width="257dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="60dp"
+        android:textSize="30dp"
+        android:textStyle="bold"
+        android:gravity="center"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.164"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -108,8 +112,7 @@
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.13" />
-
+        app:layout_constraintVertical_bias="0.178" />
 
     <Button
         android:id="@+id/btn_menustatus"
@@ -123,7 +126,7 @@
         app:layout_constraintHorizontal_bias="0.468"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.22" />
+        app:layout_constraintVertical_bias="0.267" />
 
     <ImageButton
         android:id="@+id/btn_sendtodevice"
@@ -132,56 +135,16 @@
         android:backgroundTint="#00FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.263"
+        app:layout_constraintHorizontal_bias="0.194"
         app:layout_constraintStart_toEndOf="@+id/entercorrection"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.31"
+        app:layout_constraintVertical_bias="0.35"
         app:srcCompat="@drawable/sendicon" />
 
-    <Button
-        android:id="@+id/btn_sendfilepath"
-        android:layout_width="300dp"
-        android:layout_height="50dp"
-        android:backgroundTint="@color/white"
-        android:gravity="center"
-        android:text="ОТПРАВИТЬ ФАЙЛ"
-        android:textColor="@color/cryola"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.477"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.521" />
 
-    <Button
-        android:id="@+id/btn_folder"
-        android:layout_width="300dp"
-        android:layout_height="50dp"
-        android:backgroundTint="@color/white"
-        android:gravity="center"
-        android:text="ВЫБРАТЬ ФАЙЛ"
-        android:textColor="@color/cryola"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.468"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.434" />
 
-    <Button
-        android:id="@+id/btndata"
-        android:layout_width="300dp"
-        android:layout_height="50dp"
-        android:backgroundTint="@color/white"
-        android:gravity="center"
-        android:text="Считать данные"
-        android:textColor="@color/cryola"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.477"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.613" />
+
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

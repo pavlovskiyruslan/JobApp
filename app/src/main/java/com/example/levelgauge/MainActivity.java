@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -31,6 +32,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import android.graphics.Color;
@@ -49,6 +51,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TableLayout;
@@ -90,9 +93,11 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipFile;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
+    SwitchCompat switchCompat;
     private Button btnScan;
     private Button btnDisconnect;
     private boolean mScanning;
@@ -111,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btn_settings;
     private EditText entercorrection;
     private Button btn_folder;
+    private Button btn_ipadres;
     private ImageButton btn_sendtodevice;
     private Button btn_sendfilepath;
     private TextView tv_menustatus;
@@ -171,8 +177,10 @@ public class MainActivity extends AppCompatActivity {
     public int checksenttimes = 0;
     public String filerowstring = "7";
     public int amountofcells;
-    public int curRow = 0;
-    public int curCol = 0;
+    public int curRow = 1;
+    public int curCol = 1;
+    public int indexM;
+    private Boolean check_status;
 
 
 
@@ -263,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
         //    }
         //}
 
-
+        switchCompat = findViewById(R.id.switchon);
         tvReceivedData = findViewById(R.id.tvReceivedData);
         tvStatusTop = findViewById(R.id.tvStatusTop);
         mTableDevices = findViewById(R.id.devicesFound);
@@ -281,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
 
         btn_settings = findViewById(R.id.btn_settings);
         btn_settings.setOnClickListener(new View.OnClickListener() {
-
             @Override
             public void onClick(View v) {
                 if (mBluetoothGatt == null) {
@@ -317,6 +324,8 @@ public class MainActivity extends AppCompatActivity {
                         sendhigh();
                     }
                 });
+
+
                 Button btn_phonenumber = Menudialog.findViewById(R.id.btn_phonenumber);
                 btn_phonenumber.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -328,66 +337,114 @@ public class MainActivity extends AppCompatActivity {
                         sendphone();
                     }
                 });
+
+
+                Button btn_ipadres = Menudialog.findViewById(R.id.btn_ipadres);
+                btn_ipadres.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Menudialog.dismiss();
+                        btn_menustatus.setText("ЗАДАТЬ ВЫСОТУ");
+                        btn_menustatus.setGravity(Gravity.CENTER);
+                        makevissible();
+                        ipadres();
+                    }
+                });
+                SwitchCompat switchCompat = Menudialog.findViewById(R.id.switchon);
+                switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                        if(isChecked){
+                            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                            byte[] value = new byte[1];
+                            value[0] = (byte) ('n' & 0xFF);
+                            tmpChar.setValue(value);
+                            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                            writeCharacteristic(tmpChar);
+                            //When switch checked
+                            switchCompat.setChecked(true);
+                        }
+                        else{
+                            switchCompat.setChecked(false);
+                            //When switch off
+                        }
+
+                }
+                });
+
+
+                Button btn_sendfilepath = Menudialog.findViewById(R.id.btn_sendfilepath);
+                btn_sendfilepath.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Menudialog.dismiss();
+                        showArrayofExcelFile("Вы хотите отправить файл ? ");
+                    }
+                });
+
+
+                Button btn_data = Menudialog.findViewById(R.id.btndata);
+                btn_data.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Menudialog.dismiss();
+                            try {
+                                Thread.sleep(1000); //Приостанавливает поток на 1 секунду
+                            } catch (Exception e) {
+
+                            }
+                            if (mBluetoothGatt == null) {
+                                Toast toast = Toast.makeText(getApplicationContext(),
+                                        "ПОЖАЛУЙСТА ПОДКЛЮЧИТЕСЬ К УСТРОЙСТВУ",
+                                        Toast.LENGTH_LONG);
+                                toast.setGravity(Gravity.CENTER, 0, 0);
+                                toast.show();
+                                return;
+                            }
+                            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                            mBluetoothGatt.requestMtu(50);
+                            try {
+                                Thread.sleep(1000); //Приостанавливает поток на 1 секунду
+                            } catch (Exception e) {
+
+                            }
+                            if (led_service == null) {
+                                return;
+                            }
+                            if(get_flag == 3){
+                                BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                                byte[] value = new byte[1];
+                                value[0] = (byte) ('x' & 0xFF);
+                                tmpChar.setValue(value);
+                                tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                                writeCharacteristic(tmpChar);
+                                ShowProgressDialog();
+                                return;
+                            }
+                            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                            byte[] value = new byte[1];
+                            value[0] = (byte) ('d' & 0xFF);
+                            tmpChar.setValue(value);
+                            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                            writeCharacteristic(tmpChar);
+                            ShowProgressDialog();
+
+                    }
+                });
+                Button btn_folder = Menudialog.findViewById(R.id.btn_folder);
+                btn_folder.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Menudialog.dismiss();
+                        showFileChooser();
+                    }
+                });
                 Menudialog.show();
 
             }
         });
-        btn_folder = findViewById(R.id.btn_folder);
-        btn_folder.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showFileChooser();
-            }
-        });
 
-        btn_sendfilepath = findViewById(R.id.btn_sendfilepath);
-        btn_sendfilepath.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showArrayofExcelFile("Вы хотите отправить файл ? ");
-
-            }
-        });
-
-        btndata = findViewById(R.id.btndata);
-        btndata.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    Thread.sleep(1000); //Приостанавливает поток на 1 секунду
-                } catch (Exception e) {
-
-                }
-                if (mBluetoothGatt == null) {
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "ПОЖАЛУЙСТА ПОДКЛЮЧИТЕСЬ К УСТРОЙСТВУ",
-                            Toast.LENGTH_LONG);
-                    toast.setGravity(Gravity.CENTER, 0, 0);
-                    toast.show();
-                    return;
-                }
-                BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
-                mBluetoothGatt.requestMtu(50);
-                try {
-                    Thread.sleep(1000); //Приостанавливает поток на 1 секунду
-                } catch (Exception e) {
-
-                }
-                if (led_service == null) {
-                    return;
-                }
-
-                BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
-                byte[] value = new byte[1];
-                value[0] = (byte) ('d' & 0xFF);
-                tmpChar.setValue(value);
-                tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                writeCharacteristic(tmpChar);
-                ShowProgressDialog();
-
-
-            }
-        });
 
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
@@ -447,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
             file_path = temp_path + path;
             ReadExcel();
             //((TextView) findViewById(R.id.tv_filepath)).setText(""+ file_path );
-            btn_folder.setText(file_path);
+            //btn_folder.setText(file_path);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -540,58 +597,169 @@ public class MainActivity extends AppCompatActivity {
                         savetobd(receivedValueStr);
                     }
                     else if(get_flag == 2) {
-
                         get_flag = 0;
                         //((TextView) findViewById(R.id.txt_path)).setText("GET FLAG = 2");
                         amountofcells = noOfRows * noOfColumns + 1;
-                        for (int i = 0; i < noOfRows; i++) {
-                            for (int j = 0; j < noOfColumns; j++) {
+                        //for (int i = 0; i < noOfRows; i++) {
+                        //    for (int j = 0; j < noOfColumns; j++) {
                                 //((TextView) findViewById(R.id.txt_path)).append(matrix[i][j] + " ");
                                 //System.out.print("[" + i +"]" + "[" + j + "]" +  matrix[i][j]);
-                            }
+                        //    }
                             //((TextView) findViewById(R.id.txt_path)).append("\n");
                             //System.out.println();
-                        }
+                        //}
                         checksenttimes++;
+
                         if(checksenttimes < amountofcells){
                             if(curRow < noOfRows - 1){
                                 if(curCol < noOfColumns - 1){
-                                    a = "f" + curRow + curCol + matrix[curRow][curCol];
-                                    curCol++;
-                                    sentdata(a);
+                                    //a = "f" + curRow + curCol + matrix[curRow][curCol];
+                                    a = "" + matrix[curRow][curCol];
+                                    indexM = a.indexOf(".");
+                                    System.out.println(indexM);
+                                    if(indexM == 3){
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                    else if(indexM < 3){
+                                        a = a.substring(6);
+                                        a = "0" + a;
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                    else if(indexM > 3){
+                                        a = a.substring(0);
+                                        a = a + "0";
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+
                                 }
-                                else if (curCol < noOfColumns){
-                                    curCol = 0;
-                                    curRow++;
-                                    a = "f" + curRow + curCol + matrix[curRow][curCol];
-                                    sentdata(a);
+                                else if (curCol == noOfColumns - 1){
+                                    //a = "f" + curRow + curCol + matrix[curRow][curCol];
+                                    a = "" + matrix[curRow][curCol];
+                                    indexM = a.indexOf(".");
+                                    System.out.println(indexM);
+                                    if(indexM == 3){
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                    else if(indexM < 3){
+                                        a = a.substring(6);
+                                        a = "0" + a;
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                    else if(indexM > 3){
+                                        a = a.substring(0);
+                                        a = a + "0";
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
 
                                 }
                             }
                             else if(curRow < noOfRows){
                                 if(curCol < noOfColumns - 1){
-                                    a = "f" + curRow + curCol + matrix[curRow][curCol];
-                                    curCol++;
-                                    sentdata(a);
-                                }
-                                else if (curCol < noOfColumns){
+                                    //a = "f" + curRow + curCol + matrix[curRow][curCol];
+                                    a = "" + matrix[curRow][curCol];
+                                    indexM = a.indexOf(".");
+                                    System.out.println(indexM);
+                                    if(indexM == 3 && a.length() == 7){
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                    else if(indexM < 3){
+                                        //a = a.substring(6);
+                                        while((a.length() < 6) || (indexM < 3 )) {
+                                            a = "0" + a;
+                                            indexM = a.indexOf(".");
+                                        }
+                                        if(indexM == 3 && a.length() == 7){
+                                            String r = "f" + a;
+                                            curCol++;
+                                            sentdata(r);
+                                        }
+                                        else if(indexM == 3 && a.length() != 7){
+                                            while(a.length() != 7){
+                                                a = a + "0";
+                                                indexM = a.indexOf(".");
+                                                String r = "f" + a;
+                                                curCol++;
+                                                sentdata(r);
+                                            }
+                                        }
+                                    }
+                                    else if(indexM > 3){
+                                        a = a.substring(0);
 
-                                    sentstop();
-                                    StopProgressDialogSendFile();
+                                        a = a + "0";
+                                        String r = "f" + a;
+                                        curCol++;
+                                        sentdata(r);
+                                    }
+                                }
+                                else if (curCol == noOfColumns - 1){
+                                    //a = "f" + curRow + curCol + matrix[curRow][curCol];
+                                    a = "" + matrix[curRow][curCol];
+                                    indexM = a.indexOf(".");
+                                    if(indexM == 3){
+                                        String r = "f" + a;
+                                        curRow++;
+                                        sentdata(r);
+                                        sentstop();
+                                        StopProgressDialogSendFile();
+                                    }
+                                    else if(indexM < 3){
+                                        a = a.substring(6);
+                                        a = "0" + a;
+                                        String r = "f" + a;
+                                        curRow++;
+                                        sentdata(r);
+                                        sentstop();
+                                        StopProgressDialogSendFile();
+                                    }
+                                    else if(indexM > 3){
+                                        a = a.substring(0);
+                                        a = a + "0";
+                                        String r = "f" + a;
+                                        curRow++;
+                                        sentdata(r);
+                                        sentstop();
+                                        StopProgressDialogSendFile();
+                                    }
+                                    System.out.println(indexM);
+                                    //curRow++;
+                                    //sentdata(a);
+                                    //sentstop();
+                                    //StopProgressDialogSendFile();
                                 }
                             }
 
                         }
                         else{
-
                             sentstop();
+                            StopProgressDialogSendFile();
                             //StopProgressDialog();
                         }
 
 
                     }
                     else if(get_flag == 3){
-                        tvReceivedData.setText(receivedValueStr);
+                        System.out.println(receivedValueStr);
+                        String[] output = receivedValueStr.split("v");
+                        StringBuffer sb = new StringBuffer(output[1]);
+                        sb.insert(1,".");
+                        tvReceivedData.setText(output[0] + "СМ" + "       " + sb + "V");
+
+                        //tvReceivedData.setText( + "СМ");
                         BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
                         BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
                         byte[] value = new byte[1];
@@ -688,7 +856,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private StringBuilder sentdata(String a) {
-        System.out.println(a);
+        //System.out.println(a);
         char c = 0;
         StringBuilder strBuilder = new StringBuilder();
         byte[] value = new byte[a.length()];
@@ -707,12 +875,10 @@ public class MainActivity extends AppCompatActivity {
         tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
         writeCharacteristic(tmpChar);
         return strBuilder;
-
     }
 
 
-    private StringBuilder getDistance(byte[] arr)
-    {
+    private StringBuilder getDistance(byte[] arr) {
         byte[] tmpArr = new byte[gl_recei_len];
         char ch = 0;
         StringBuilder strBuilder = new StringBuilder();
@@ -723,11 +889,11 @@ public class MainActivity extends AppCompatActivity {
         if (tmpArr[0] == 117){
             System.out.println("GETT DATA");
 
-            for (int i = 1; i < 4; i++) {
+            for (int i = 1; i < 8; i++) {
                 ch = (char) tmpArr[i];
 
-                System.out.println(i);
-                System.out.println(ch);
+                //System.out.println(i);
+                //System.out.println(ch);
                 strBuilder.append(ch);
             }
                 get_flag = 3;
@@ -739,8 +905,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (tmpArr[1] == 70 && tmpArr[11] == 70 && tmpArr[24] == 70) {
+
             get_flag = 0;
             StopProgressDialog();
+            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+            byte[] value = new byte[1];
+            //value[0] = (byte) ('n' & 0xFF);
+            tmpChar.setValue(value);
+            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+            writeCharacteristic(tmpChar);
         }
 
         if (tmpArr[0] == 55 && tmpArr[1] == 55) {
@@ -752,11 +926,11 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < tmparr_len; i++) {
             ch = (char) tmpArr[i];
 
-            System.out.println(i);
-            System.out.println(ch);
+            //System.out.println(i);
+            //System.out.println(ch);
             strBuilder.append(ch);
         }
-        System.out.println(strBuilder);
+        //System.out.println(strBuilder);
         return strBuilder;
     }
 
@@ -770,7 +944,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void StopProgressDialog() {
-
         progressDialog.dismiss();
         Toast toast = Toast.makeText(getApplicationContext(),
                 "Данные успешно сохранены на устройстве",
@@ -792,7 +965,6 @@ public class MainActivity extends AppCompatActivity {
                 Toast.LENGTH_LONG);
         toast.setGravity(Gravity.CENTER, 0, 0);
         toast.show();
-        btn_folder.setText("ВЫБЕРИТЕ ФАЙЛ");
 
     }
 
@@ -819,8 +991,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                EditText entercorrection = findViewById(R.id.entercorrection);
-                String number = "c" + entercorrection.getText().toString();
                 if (mBluetoothGatt == null) {
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "ПОЖАЛУЙСТА ПОДКЛЮЧИТЕСЬ К УСТРОЙСТВУ",
@@ -829,14 +999,103 @@ public class MainActivity extends AppCompatActivity {
                     toast.show();
                     return;
                 }
+
+
+
+                EditText entercorrection = findViewById(R.id.entercorrection);
+                String text_pool = entercorrection.getText().toString();
+                Pattern pattern = Pattern.compile("[~#@*+%{}.,N<>\\[\\]|\"\\_^]");
+                Matcher matcher = pattern.matcher(text_pool);
+                boolean matchFound = matcher.find();
+                if(matchFound) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ТОЛЬКО ЦИФРЫ ОТ -9 ДО +9",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                } else {
+                    System.out.println("Match not found");
+                }
+
+
+                Integer edittext_pool =  Integer.parseInt(text_pool);
+                String number = "c" + entercorrection.getText().toString();
+
+
                 BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
                 BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
                 if (led_service == null) {
                     return;
                 }
-                if (number.length() > 20) {
+                if(edittext_pool > 9 || edittext_pool <= -9){
                     Toast toast = Toast.makeText(getApplicationContext(),
-                            "ВВЕДИТЕ 20 ЭЛЕМЕНТОВ",
+                            "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ ОТ -9 ДО +9",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                }
+
+                if (number.length() > 3) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ ОТ -9 ДО +9",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                } else if (number.length() == 1) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ПОЛЕ НЕ ДОЛЖНО БЫТЬ ПУСТЫМ, ВВЕДИТЕ ДАННЫЕ",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                } else {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "УСПЕШНО",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    invisible();
+                }
+                //tmpChar.setValue(number);
+                //tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                //writeCharacteristic(tmpChar);
+                //entercorrection.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                //byte[] value = new byte[1];
+                //value[0] = (byte) ('n' & 0xFF);
+                //tmpChar.setValue(value);
+                //tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                //writeCharacteristic(tmpChar);
+            }
+        });
+    }
+
+    private void ipadres(){
+        btn_sendtodevice.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText entercorrection = findViewById(R.id.entercorrection);
+                System.out.println(entercorrection.getText().toString());
+                String number = "w" + entercorrection.getText().toString() + "\n";
+                if (mBluetoothGatt == null) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ПОЖАЛУЙСТА ПОДКЛЮЧИТЕСЬ К УСТРОЙСТВУ",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                }
+
+                BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                if (led_service == null) {
+                    return;
+                }
+                if (number.length() > 14) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ВВЕДИТЕ КОРРЕКТНЫЙ IP ADRESS В ФОРМАТЕ: 255/255/255/255",
                             Toast.LENGTH_LONG);
                     toast.setGravity(Gravity.CENTER, 0, 0);
                     toast.show();
@@ -860,6 +1119,11 @@ public class MainActivity extends AppCompatActivity {
                 tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
                 writeCharacteristic(tmpChar);
                 entercorrection.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                byte[] value = new byte[1];
+                //value[0] = (byte) ('n' & 0xFF);
+                tmpChar.setValue(value);
+                tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                writeCharacteristic(tmpChar);
             }
         });
     }
@@ -879,14 +1143,31 @@ public class MainActivity extends AppCompatActivity {
                     toast.show();
                     return;
                 }
+
+                String text_pool = entercorrection.getText().toString();
+                Pattern pattern = Pattern.compile("[~#@*+%{}.,N<>\\[\\]|\"\\_^]");
+                Matcher matcher = pattern.matcher(text_pool);
+                boolean matchFound = matcher.find();
+                if(matchFound) {
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ТОЛЬКО ЦИФРЫ ОТ -9 ДО +9",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                } else {
+                    System.out.println("Match not found");
+                }
+
+
                 BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
                 BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
                 if (led_service == null) {
                     return;
                 }
-                if (number.length() > 20) {
+                if (number.length() > 4) {
                     Toast toast = Toast.makeText(getApplicationContext(),
-                            "ВВЕДИТЕ 20 ЭЛЕМЕНТОВ",
+                            "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ 999 СМ",
                             Toast.LENGTH_LONG);
                     toast.setGravity(Gravity.CENTER, 0, 0);
                     toast.show();
@@ -910,6 +1191,11 @@ public class MainActivity extends AppCompatActivity {
                 tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
                 writeCharacteristic(tmpChar);
                 entercorrection.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                byte[] value = new byte[1];
+                //value[0] = (byte) ('n' & 0xFF);
+                tmpChar.setValue(value);
+                tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                writeCharacteristic(tmpChar);
             }
         });
     }
@@ -921,7 +1207,7 @@ public class MainActivity extends AppCompatActivity {
 
                 EditText entercorrection = findViewById(R.id.entercorrection);
                 System.out.println(entercorrection.getText().toString());
-                String number = "p" + entercorrection.getText().toString();
+                String number = "p" + entercorrection.getText().toString() + "\n";
                 if (mBluetoothGatt == null) {
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "ПОЖАЛУЙСТА ПОДКЛЮЧИТЕСЬ К УСТРОЙСТВУ",
@@ -935,9 +1221,9 @@ public class MainActivity extends AppCompatActivity {
                 if (led_service == null) {
                     return;
                 }
-                if (number.length() > 20) {
+                if (number.length() > 11) {
                     Toast toast = Toast.makeText(getApplicationContext(),
-                            "ВВЕДИТЕ 20 ЭЛЕМЕНТОВ",
+                            "ВВЕДИТЕ КОРРЕКТНЫЙ НОМЕР В ФОРМАТЕ: 90 900 1234",
                             Toast.LENGTH_LONG);
                     toast.setGravity(Gravity.CENTER, 0, 0);
                     toast.show();
@@ -961,12 +1247,16 @@ public class MainActivity extends AppCompatActivity {
                 tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
                 writeCharacteristic(tmpChar);
                 entercorrection.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                byte[] value = new byte[1];
+                //
+
+
+                tmpChar.setValue(value);
+                tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                writeCharacteristic(tmpChar);
             }
         });
     }
-
-
-
 
 
 
@@ -1484,6 +1774,17 @@ public class MainActivity extends AppCompatActivity {
             toast.show();
             return;
         }
+
+        if(file_path == null)
+        {
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    "ВЫБЕРИТЕ ФАЙЛ",
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+            return;
+        }
+
         BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
         mBluetoothGatt.requestMtu(50);
         try {
@@ -1495,8 +1796,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         checksenttimes = 0;
-        curCol=0;
-        curRow=0;
+        curCol=1;
+        curRow=1;
         BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
         byte[] value = new byte[1];
         value[0] = (byte) ('f' & 0xFF);
