@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity {
     SwitchCompat switchCompat;
     private Button btnScan;
     private Button btnDisconnect;
+    private Button btnStop;
     private boolean mScanning;
     private static final long SCAN_PERIOD = 10000;
     private final Map<BluetoothDevice, Integer> mBtDevices = new HashMap<>();
@@ -123,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
     private String path;
     public String temp_path = "/storage/emulated/0/";
     public String file_path;
+    public String test;
     private static final int LONG_DELAY = 3500; // 3.5 seconds
     ProgressDialog progressDialog;
     // Tag used for logging
@@ -172,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
     public static String a;
     public static int tmparr_len;
     public static int get_flag;
+    public static int switch_flag = 0;
     public final String DIR_SD = "Level Gauge";
     public final String FILENAME_SD = "History.txt";
     public int checksenttimes = 0;
@@ -211,6 +214,7 @@ public class MainActivity extends AppCompatActivity {
         btn_sendtodevice = findViewById(R.id.btn_sendtodevice);
         btn_phonenumber = findViewById(R.id.btn_phonenumber);
         btn_menustatus = findViewById(R.id.btn_menustatus);
+
         //tv_menustatus = findViewById(R.id.tv_menustatus);
         invisible();
 
@@ -275,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
         tvReceivedData = findViewById(R.id.tvReceivedData);
         tvStatusTop = findViewById(R.id.tvStatusTop);
         mTableDevices = findViewById(R.id.devicesFound);
-
+        btnStop = findViewById(R.id.btnStop);
         btnScan = findViewById(R.id.btnScan);
         btnScan.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -285,10 +289,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        btnStop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                scanLeDevice(false);
+
+            }
+        });
+
 
 
         btn_settings = findViewById(R.id.btn_settings);
         btn_settings.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
                 if (mBluetoothGatt == null) {
@@ -301,7 +314,12 @@ public class MainActivity extends AppCompatActivity {
                 }
                 Dialog Menudialog = new Dialog(MainActivity.this);
                 Menudialog.setContentView(R.layout.dialog_scroll);
-                Menudialog.setTitle("НАСТРОЙКИ");
+                //Menudialog.setTitle("НАСТРОЙКИ");
+
+
+
+
+
                 Button btncorrection = Menudialog.findViewById(R.id.btncorrection);
                 btncorrection.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -313,6 +331,7 @@ public class MainActivity extends AppCompatActivity {
                         sendcorrection();
                     }
                 });
+
                 Button btnhigh = Menudialog.findViewById(R.id.btnhigh);
                 btnhigh.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -344,34 +363,15 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
                         Menudialog.dismiss();
-                        btn_menustatus.setText("ЗАДАТЬ ВЫСОТУ");
+                        btn_menustatus.setText("ЗАДАТЬ IPADRES");
                         btn_menustatus.setGravity(Gravity.CENTER);
                         makevissible();
                         ipadres();
                     }
                 });
-                SwitchCompat switchCompat = Menudialog.findViewById(R.id.switchon);
-                switchCompat.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        if(isChecked){
-                            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
-                            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
-                            byte[] value = new byte[1];
-                            value[0] = (byte) ('n' & 0xFF);
-                            tmpChar.setValue(value);
-                            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                            writeCharacteristic(tmpChar);
-                            //When switch checked
-                            switchCompat.setChecked(true);
-                        }
-                        else{
-                            switchCompat.setChecked(false);
-                            //When switch off
-                        }
 
-                }
-                });
+
+
 
 
                 Button btn_sendfilepath = Menudialog.findViewById(R.id.btn_sendfilepath);
@@ -440,10 +440,15 @@ public class MainActivity extends AppCompatActivity {
                         showFileChooser();
                     }
                 });
+
+
+                SwitchCompat switchCompat = Menudialog.findViewById(R.id.switchon);
+                switch_status(switchCompat);
                 Menudialog.show();
 
             }
         });
+
 
 
 
@@ -462,6 +467,9 @@ public class MainActivity extends AppCompatActivity {
         gattAttributes.put(STREAM_CHAR.toLowerCase(), "Stream char");
 
         btnDisconnect = findViewById(R.id.btnDisconnect);
+        btnDisconnect.setVisibility(View.INVISIBLE);
+        btnStop.setVisibility(View.INVISIBLE);
+
         btnDisconnect.setEnabled(false);
         btnDisconnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -484,11 +492,15 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, MY_PERMISSIONS_REQUEST_ENABLE_BT);
         }
+
+
     }
 
     @Override
     protected void onDestroy() {
         disconnect();
+
+
         super.onDestroy();
     }
 
@@ -555,14 +567,20 @@ public class MainActivity extends AppCompatActivity {
                 case ACTION_GATT_CONNECTED:
                     tvStatusTop.setText("Соединен");
                     btnDisconnect.setEnabled(true);
+                    btnScan.setVisibility(View.INVISIBLE);
+                    btnStop.setVisibility(View.INVISIBLE);
+                    btnDisconnect.setVisibility(View.VISIBLE);
+
                     break;
                 case ACTION_GATT_DISCONNECTED:
 //                    stopTimer();
 //                    dataCharacteristic = null;
                     invisible();
+                    btnDisconnect.setVisibility(View.INVISIBLE);
                     tvStatusTop.setText("Разъединен");
                     btnDisconnect.setEnabled(false);
                     tvReceivedData.setText(" ");
+                    btnScan.setVisibility(View.VISIBLE);
                     break;
                 case ACTION_GATT_SERVICES_DISCOVERED:
 //                    BluetoothGattService dataService = getGattServiceByUuid(UUID_DATA_SERVICE);
@@ -753,21 +771,50 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                     else if(get_flag == 3){
-                        System.out.println(receivedValueStr);
-                        String[] output = receivedValueStr.split("v");
-                        StringBuffer sb = new StringBuffer(output[1]);
-                        sb.insert(1,".");
-                        tvReceivedData.setText(output[0] + "СМ" + "       " + sb + "V");
+                        if(switch_flag == 1)
+                        {
+                            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                            byte[] value = new byte[1];
+                            value[0] = (byte) ('z' & 0xFF);
+                            tmpChar.setValue(value);
+                            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                            writeCharacteristic(tmpChar);
+                            switch_flag = 0;
+                            tvReceivedData.setText("");
+                        }
+                        else{
+                            System.out.println(receivedValueStr);
+                            Integer first_element_of_receivedValueStr = Integer.valueOf(receivedValueStr.charAt(0));
 
-                        //tvReceivedData.setText( + "СМ");
-                        BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
-                        BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
-                        byte[] value = new byte[1];
-                        value[0] = (byte) ('n' & 0xFF);
-                        tmpChar.setValue(value);
-                        tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                        writeCharacteristic(tmpChar);
-                        get_flag = 0;
+                            if(first_element_of_receivedValueStr == 48){
+                                System.out.println(first_element_of_receivedValueStr);
+                                test = receivedValueStr.substring(1, 8);
+                                System.out.println(test);
+                                String[] output = test.split("v");
+                                StringBuffer sb = new StringBuffer(output[1]);
+                                sb.insert(1,".");
+                                tvReceivedData.setText(output[0] + "mm" + "       " + sb + "V");
+                            }
+                            else{
+                                String[] output = receivedValueStr.split("v");
+                                StringBuffer sb = new StringBuffer(output[1]);
+                                sb.insert(1,".");
+                                tvReceivedData.setText(output[0] + "mm" + "       " + sb + "V");
+                            }
+                            //tvReceivedData.setText( + "СМ");
+                            BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                            BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                            byte[] value = new byte[1];
+                            value[0] = (byte) ('n' & 0xFF);
+                            tmpChar.setValue(value);
+                            tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                            writeCharacteristic(tmpChar);
+                            get_flag = 0;
+                            switch_flag = 0;
+                        }
+
+
                     }
                     else
                     {
@@ -877,6 +924,53 @@ public class MainActivity extends AppCompatActivity {
         return strBuilder;
     }
 
+    public void switch_status(SwitchCompat switchCompat){
+        switchCompat.setChecked(false);
+        SharedPreferences sharedPreferences = getSharedPreferences("save", MODE_PRIVATE);
+        switchCompat.setChecked(sharedPreferences.getBoolean("value", false));
+        switchCompat.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(switchCompat.isChecked()){
+                    SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+                    editor.putBoolean("value", true);
+                    editor.apply();
+                    switchCompat.setChecked(true);
+                    BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                    BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                    byte[] value = new byte[1];
+                    value[0] = (byte) ('n' & 0xFF);
+                    tmpChar.setValue(value);
+                    tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                    writeCharacteristic(tmpChar);
+                    switch_flag = 0;
+                }
+                else{
+                    SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+                    editor.putBoolean("value", false);
+                    editor.apply();
+                    switchCompat.setChecked(false);
+                    tvReceivedData.setText("");
+                    BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
+                    BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
+                    byte[] value = new byte[1];
+                    value[0] = (byte) ('z' & 0xFF);
+                    tmpChar.setValue(value);
+                    tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                    writeCharacteristic(tmpChar);
+                    switch_flag = 1;
+                }
+            }
+        });
+    }
+
+    public void force_false_status(SwitchCompat switchCompat){
+        SharedPreferences.Editor editor = getSharedPreferences("save", MODE_PRIVATE).edit();
+        editor.putBoolean("value", false);
+        editor.apply();
+    }
+
+
 
     private StringBuilder getDistance(byte[] arr) {
         byte[] tmpArr = new byte[gl_recei_len];
@@ -889,7 +983,7 @@ public class MainActivity extends AppCompatActivity {
         if (tmpArr[0] == 117){
             System.out.println("GETT DATA");
 
-            for (int i = 1; i < 8; i++) {
+            for (int i = 1; i < 9; i++) {
                 ch = (char) tmpArr[i];
 
                 //System.out.println(i);
@@ -933,6 +1027,9 @@ public class MainActivity extends AppCompatActivity {
         //System.out.println(strBuilder);
         return strBuilder;
     }
+
+
+
 
 
     private void ShowProgressDialog() {
@@ -999,12 +1096,9 @@ public class MainActivity extends AppCompatActivity {
                     toast.show();
                     return;
                 }
-
-
-
                 EditText entercorrection = findViewById(R.id.entercorrection);
                 String text_pool = entercorrection.getText().toString();
-                Pattern pattern = Pattern.compile("[~#@*+%{}.,N<>\\[\\]|\"\\_^]");
+                Pattern pattern = Pattern.compile("[~#@*%{}.,N<>\\[\\]|\"\\_^]");
                 Matcher matcher = pattern.matcher(text_pool);
                 boolean matchFound = matcher.find();
                 if(matchFound) {
@@ -1014,20 +1108,26 @@ public class MainActivity extends AppCompatActivity {
                     toast.setGravity(Gravity.CENTER, 0, 0);
                     toast.show();
                     return;
-                } else {
+                }
+                else {
                     System.out.println("Match not found");
                 }
-
-
+                if(text_pool.isEmpty()){
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "ПОЛЕ НЕ ДОЛЖНО БЫТЬ ПУСТЫМ, ВВЕДИТЕ ДАННЫЕ",
+                            Toast.LENGTH_LONG);
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.show();
+                    return;
+                }
                 Integer edittext_pool =  Integer.parseInt(text_pool);
                 String number = "c" + entercorrection.getText().toString();
-
-
                 BluetoothGattService led_service = mBluetoothGatt.getService(UUID_LED_SERVICE);
                 BluetoothGattCharacteristic tmpChar = led_service.getCharacteristic(UUID_LED0_STATE);
                 if (led_service == null) {
                     return;
                 }
+
                 if(edittext_pool > 9 || edittext_pool <= -9){
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ ОТ -9 ДО +9",
@@ -1037,14 +1137,14 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                if (number.length() > 3) {
+                if (text_pool.length() > 3) {
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "МАКСИМАЛЬНОЕ ЗНАЧЕНИЕ ОТ -9 ДО +9",
                             Toast.LENGTH_LONG);
                     toast.setGravity(Gravity.CENTER, 0, 0);
                     toast.show();
                     return;
-                } else if (number.length() == 1) {
+                } else if (text_pool.length() == 0) {
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "ПОЛЕ НЕ ДОЛЖНО БЫТЬ ПУСТЫМ, ВВЕДИТЕ ДАННЫЕ",
                             Toast.LENGTH_LONG);
@@ -1056,6 +1156,16 @@ public class MainActivity extends AppCompatActivity {
                             "УСПЕШНО",
                             Toast.LENGTH_LONG);
                     toast.setGravity(Gravity.CENTER, 0, 0);
+                    closekeyboard();
+                    tmpChar.setValue(number);
+                    tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                    writeCharacteristic(tmpChar);
+                    entercorrection.onEditorAction(EditorInfo.IME_ACTION_DONE);
+                    byte[] value = new byte[1];
+                    value[0] = (byte) ('n' & 0xFF);
+                    tmpChar.setValue(value);
+                    tmpChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                    writeCharacteristic(tmpChar);
                     toast.show();
                     invisible();
                 }
@@ -1073,6 +1183,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void ipadres(){
+        Toast toast = Toast.makeText(getApplicationContext(),
+                "ВВЕДИТЕ IP ADRESS В ФОРМАТЕ: 255/255/255/255",
+                Toast.LENGTH_LONG);
+        toast.setGravity(Gravity.CENTER, 0, 0);
+        toast.show();
         btn_sendtodevice.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1093,7 +1208,7 @@ public class MainActivity extends AppCompatActivity {
                 if (led_service == null) {
                     return;
                 }
-                if (number.length() > 14) {
+                if (number.length() > 17) {
                     Toast toast = Toast.makeText(getApplicationContext(),
                             "ВВЕДИТЕ КОРРЕКТНЫЙ IP ADRESS В ФОРМАТЕ: 255/255/255/255",
                             Toast.LENGTH_LONG);
@@ -1200,6 +1315,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
     private void sendphone(){
         btn_sendtodevice.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1257,6 +1373,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    public void closekeyboard(){
+        View view = this.getCurrentFocus();
+        if(view != null){
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
 
 
 
@@ -1460,6 +1585,13 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mScanning = false;
             mBtScanner.stopScan(mScanCallback);
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    "СКАНИРОВАНИЕ ОСТАНОВЛЕНО",
+                    Toast.LENGTH_LONG);
+            toast.setGravity(Gravity.CENTER, 0, 0);
+            toast.show();
+            btnStop.setVisibility(View.INVISIBLE);
+            btnScan.setVisibility(View.VISIBLE);
         }
         invalidateScanButton();
     }
@@ -1533,6 +1665,7 @@ public class MainActivity extends AppCompatActivity {
             b.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     connectToDevice(savedDevice);
+                    force_false_status(switchCompat);
                 }
             });
 
@@ -1696,7 +1829,8 @@ public class MainActivity extends AppCompatActivity {
         if (!mScanning) {
             btnScan.setText("Сканировать");
         } else {
-            btnScan.setText("Стоп");
+            btnScan.setVisibility(View.INVISIBLE);
+            btnStop.setVisibility(View.VISIBLE);
         }
     }
 
@@ -1731,6 +1865,7 @@ public class MainActivity extends AppCompatActivity {
             Log.w(TAG, "Bluetooth not initialized");
             return;
         }
+        force_false_status(switchCompat);
         mBluetoothGatt.disconnect();
     }
 
