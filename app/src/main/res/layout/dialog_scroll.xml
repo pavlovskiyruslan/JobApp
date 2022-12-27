@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="320dp"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchon"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="ОТЛАДКА"
+                android:textColor="@color/cryola"
+                app:track="@drawable/bg_track" />
+
+            <Button
+                android:id="@+id/btncorrection"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="Задать Коррекцию"
+                android:textColor="@color/cryola" />
+
+            <Button
+                android:id="@+id/btnhigh"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="Задать Высоту"
+                android:textColor="@color/cryola" />
+
+
+            <Button
+                android:id="@+id/btn_phonenumber"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="Задать номер телефона"
+                android:textColor="@color/cryola" />
+
+            <Button
+                android:id="@+id/btn_ipadres"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="Задать IP ADDRESS"
+                android:textColor="@color/cryola" />
+
+            <Button
+                android:id="@+id/btn_folder"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="ВЫБРАТЬ ФАЙЛ"
+                android:textColor="@color/cryola" />
+
+            <Button
+                android:id="@+id/btn_sendfilepath"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="ОТПРАВИТЬ ФАЙЛ"
+                android:textColor="@color/cryola" />
+
+            <Button
+                android:id="@+id/btndata"
+                android:layout_width="300dp"
+                android:layout_height="50dp"
+                android:backgroundTint="@color/white"
+                android:gravity="center"
+                android:text="Считать данные"
+                android:textColor="@color/cryola" />
+
+
+        </LinearLayout>
+
+
+    </ScrollView>
+
+
+</LinearLayout>
