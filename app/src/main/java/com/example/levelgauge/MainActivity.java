@@ -478,8 +478,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ScanFilter filter = new ScanFilter.Builder().setDeviceName(DEVICE_NAME).build();
-        mScanFilters.add(filter);
+        //ScanFilter filter = new ScanFilter.Builder().setDeviceName(DEVICE_NAME).build();
+        //mScanFilters.add(filter);
 
         // Configure default scan settings
         mScanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).build();
